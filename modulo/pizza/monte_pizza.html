@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}Monte sua Pizza - Snack4You{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  /* ============ ESTILOS ============ */
+  .pizza-container { padding: 2rem 1rem; max-width: 1000px; margin: auto; }
+  .pizza-title { font-size: 2.2rem; font-weight: 800; color: #ff5722; margin-bottom: 2rem; text-align: center; }
+
+  /* Stepper */
+  .pizza-stepper { display: flex; justify-content: space-between; margin-bottom: 2rem; list-style: none; padding: 0; }
+  .pizza-stepper li { flex: 1; text-align: center; font-weight: 600; color: #bbb; position: relative; }
+  .pizza-stepper li::before {
+    content: attr(data-step); display: inline-block;
+    width: 3rem; height: 3rem; line-height: 3rem;
+    border-radius: 50%; background-color: #eee; color: #999;
+    margin-bottom: 0.5rem; font-weight: bold; transition: all 0.3s ease;
+  }
+  .pizza-stepper li::after {
+    content: ""; position: absolute; top: 1.5rem; left: 50%; width: 100%; height: 3px;
+    background-color: #eee; transform: translateX(50%); z-index: -1;
+  }
+  .pizza-stepper li:last-child::after { content: none; }
+  .pizza-stepper li.active { color: #ff5722; }
+  .pizza-stepper li.active::before { background: #ff5722; color: #fff; }
+  .pizza-stepper li.completed::before { background: #4caf50; color: #fff; }
+  .pizza-stepper li.completed::after { background: #4caf50; }
+
+  /* Steps */
+  .pizza-step { display: none; opacity: 0; transition: opacity 0.4s ease; }
+  .pizza-step.active { display: block; opacity: 1; }
+
+  /* Botões */
+  .pizza-btn { min-width: 140px; border-radius: 30px; font-weight: 600; }
+
+  /* Card de sabores */
+  .sabor-card {
+    border: 1px solid #eee; border-radius: 12px; padding: 1rem;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.06); transition: transform 0.3s ease;
+  }
+  .sabor-card:hover { transform: translateY(-4px); }
+  .sabor-title { font-weight: 700; font-size: 1.1rem; color: #333; }
+  .sabor-categoria { font-size: 0.85rem; color: #999; margin-bottom: 0.5rem; }
+  .sabor-precos { font-size: 0.9rem; color: #444; }
+
+  /* Resumo */
+  .pizza-resumo { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .pizza-total { font-size: 1.4rem; font-weight: 800; color: #4caf50; margin-top: 1rem; }
+
+  /* Flash messages */
+  .flash-container { max-width: 700px; margin: 0 auto 1.5rem auto; }
+  .alert i { margin-right: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pizza-container">
+  <h2 class="pizza-title">🍕 Monte sua Pizza</h2>
+
+  <!-- FLASH MESSAGES -->
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ 'danger' if category=='error' else category }} alert-dismissible fade show" role="alert">
+            {% if category == 'success' %}<i class="bi bi-check-circle-fill text-success"></i>{% endif %}
+            {% if category in ['danger','error'] %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}
+            {% if category == 'warning' %}<i class="bi bi-exclamation-triangle-fill text-warning"></i>{% endif %}
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Barra de passos -->
+  <ul class="pizza-stepper">
+    <li data-step="1" class="active">Tamanho & Sabores</li>
+    <li data-step="2">Escolha Sabores</li>
+    <li data-step="3">Borda & Bebidas</li>
+    <li data-step="4">Resumo</li>
+  </ul>
+
+  <!-- Formulário -->
+  <form id="pizzaForm" method="POST" novalidate>
+    <!-- Etapa 1 -->
+    <section id="step1" class="pizza-step active">
+      <h4>1. Escolha o tamanho e quantidade de sabores</h4>
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Tamanho:</label>
+        <select class="form-select" id="pizzaSize" name="size" required>
+          <option value="" disabled selected>Selecione</option>
+          <option value="P">Pequena</option>
+          <option value="M">Média</option>
+          <option value="G">Grande</option>
+        </select>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Quantidade de sabores:</label>
+        <select class="form-select" id="quantSabores" name="quantSabores" required>
+          <option value="" disabled selected>Selecione</option>
+          <option value="1">1 sabor</option>
+          <option value="2">2 sabores</option>
+          <option value="3">3 sabores</option>
+          <option value="4">4 sabores</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-primary pizza-btn float-end next">Próximo →</button>
+    </section>
+
+    <!-- Etapa 2 -->
+    <section id="step2" class="pizza-step">
+      <h4>2. Escolha os sabores</h4>
+      <p id="saboresCount" class="fw-semibold text-primary">Selecione <span id="saboresNeeded"></span> sabores.</p>
+      <div class="row row-cols-1 row-cols-md-2 g-3">
+        {% for sabor in sabores %}
+        <div class="col">
+          <div class="sabor-card">
+            <input class="form-check-input me-2" type="checkbox" id="sabor_{{ sabor.id }}" name="sabores"
+                   data-nome="{{ sabor.sabor }}"
+                   data-preco-p="{{ sabor.preco_p }}"
+                   data-preco-m="{{ sabor.preco_m }}"
+                   data-preco-g="{{ sabor.preco_g }}">
+            <label for="sabor_{{ sabor.id }}">
+              <div class="sabor-title">{{ sabor.sabor }}</div>
+              <div class="sabor-categoria">{{ sabor.categoria }}</div>
+              <div class="sabor-precos">
+                P: R$ {{ "%.2f"|format(sabor.preco_p) }} |
+                M: R$ {{ "%.2f"|format(sabor.preco_m) }} |
+                G: R$ {{ "%.2f"|format(sabor.preco_g) }}
+              </div>
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-4">
+        <button type="button" class="btn btn-secondary pizza-btn prev">← Voltar</button>
+        <button type="button" class="btn btn-primary pizza-btn float-end next">Próximo →</button>
+      </div>
+    </section>
+
+    <!-- Etapa 3 -->
+    <section id="step3" class="pizza-step">
+      <h4>3. Escolha borda e bebidas</h4>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Borda:</label>
+        <select class="form-select" id="pizzaBorda" name="borda">
+          <option value="Sem borda" data-price="0">Sem borda</option>
+          <option value="Queijo" data-price="15">Borda de Queijo +15</option>
+          <option value="Catupiry" data-price="15">Borda de Catupiry +15</option>
+          <option value="Calabresa" data-price="15">Borda de Calabresa +15</option>
+        </select>
+      </div>
+      <fieldset>
+        <legend class="fw-semibold">Bebidas:</legend>
+        <div class="form-check"><input class="form-check-input" type="checkbox" value="Refrigerante" data-price="7"> Refrigerante (R$ 7,00)</div>
+        <div class="form-check"><input class="form-check-input" type="checkbox" value="Suco" data-price="6"> Suco (R$ 6,00)</div>
+        <div class="form-check"><input class="form-check-input" type="checkbox" value="Água" data-price="4"> Água (R$ 4,00)</div>
+      </fieldset>
+      <div class="mt-4">
+        <button type="button" class="btn btn-secondary pizza-btn prev">← Voltar</button>
+        <button type="button" class="btn btn-primary pizza-btn float-end next">Próximo →</button>
+      </div>
+    </section>
+
+    <!-- Etapa 4 -->
+    <section id="step4" class="pizza-step">
+      <h4>4. Resumo do Pedido</h4>
+      <div id="resumo" class="pizza-resumo"></div>
+      <div class="mt-4">
+        <button type="button" class="btn btn-secondary pizza-btn prev">← Voltar</button>
+        <button type="submit" class="btn btn-success pizza-btn float-end">Finalizar Pedido</button>
+      </div>
+    </section>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const steps = document.querySelectorAll(".pizza-step");
+  const steppers = document.querySelectorAll(".pizza-stepper li");
+  let currentStep = 0;
+
+  function showStep(index) {
+    steps.forEach((s, i) => {
+      s.classList.toggle("active", i === index);
+      steppers[i].classList.toggle("active", i === index);
+      steppers[i].classList.toggle("completed", i < index);
+    });
+    currentStep = index;
+    updateResumo();
+  }
+
+  // Avançar e voltar
+  document.querySelectorAll(".next").forEach(btn => btn.addEventListener("click", () => {
+    if (currentStep < steps.length - 1) showStep(currentStep + 1);
+  }));
+  document.querySelectorAll(".prev").forEach(btn => btn.addEventListener("click", () => {
+    if (currentStep > 0) showStep(currentStep - 1);
+  }));
+
+  // Cálculo do preço
+  function calcularPreco() {
+    const size = document.getElementById("pizzaSize").value;
+    const quant = parseInt(document.getElementById("quantSabores").value) || 0;
+    const sabores = [...document.querySelectorAll("input[name='sabores']:checked")];
+    const borda = document.getElementById("pizzaBorda");
+    const bebidas = [...document.querySelectorAll("fieldset input:checked")];
+
+    let preco = 0;
+
+    // Sabores (média dos selecionados)
+    if (sabores.length > 0 && size) {
+      let totalSabores = 0;
+      sabores.forEach(s => {
+        if (size === "P") totalSabores += parseFloat(s.dataset.precoP);
+        if (size === "M") totalSabores += parseFloat(s.dataset.precoM);
+        if (size === "G") totalSabores += parseFloat(s.dataset.precoG);
+      });
+      preco += totalSabores / sabores.length;
+    }
+
+    // Ajuste por quantidade de sabores
+    if (quant === 1) preco *= 1.2;
+    if (quant === 3) preco *= 0.9;
+    if (quant === 4) preco *= 0.8;
+
+    // Borda
+    preco += parseFloat(borda.selectedOptions[0].dataset.price);
+
+    // Bebidas
+    bebidas.forEach(b => preco += parseFloat(b.dataset.price));
+
+    return preco.toFixed(2);
+  }
+
+  // Atualizar resumo
+  function updateResumo() {
+    const resumoDiv = document.getElementById("resumo");
+    if (!resumoDiv) return;
+    let html = "<h4>Resumo</h4>";
+
+    const size = document.getElementById("pizzaSize").value;
+    const quant = document.getElementById("quantSabores").value;
+    const sabores = [...document.querySelectorAll("input[name='sabores']:checked")].map(s => s.dataset.nome);
+    const borda = document.getElementById("pizzaBorda").value;
+    const bebidas = [...document.querySelectorAll("fieldset input:checked")].map(b => b.value);
+
+    html += `<p><strong>Tamanho:</strong> ${size || '-'}</p>`;
+    html += `<p><strong>Sabores:</strong> ${sabores.join(", ") || '-'}</p>`;
+    html += `<p><strong>Borda:</strong> ${borda}</p>`;
+    html += `<p><strong>Bebidas:</strong> ${bebidas.join(", ") || 'Nenhuma'}</p>`;
+    html += `<p class="pizza-total">Total: R$ ${calcularPreco()}</p>`;
+
+    resumoDiv.innerHTML = html;
+  }
+
+  document.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("change", updateResumo);
+  });
+
+  showStep(0);
+});
+</script>
+{% endblock %}

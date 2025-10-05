@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}{{ site_config.get('nome_restaurante', 'Seu Restaurante') }}{% endblock %}</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+ <style>
+  body.base-body { 
+    background: #fafafa; 
+    min-height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    margin:0; 
+  }
+  main.base-main { flex-grow: 1; padding: 1rem; }
+
+  /* HERO */
+  .base-hero { 
+    position: relative; 
+    width: 100%; 
+    height: 300px; 
+    overflow: hidden; 
+  }
+  .base-hero img.banner { 
+    position: absolute; 
+    inset: 0; 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    z-index: 1; 
+  }
+  .base-hero-overlay {
+    position: absolute; 
+    inset: 0;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    padding: 0 40px; 
+    z-index: 2; 
+    color: white;
+    background: rgba(0,0,0,0.35);
+    text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
+  }
+
+  /* LOGO + NOME */
+  .base-logo {
+    display: flex; 
+    align-items: center; 
+    gap: 18px;
+  }
+  .base-logo img {
+    height: 110px; 
+    width: 110px; 
+    border-radius: 50%; 
+    object-fit: cover;
+    background: white; 
+    padding: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+  .base-logo .restaurant-name {
+    font-size: 2.8rem;   /* título maior */
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+  }
+
+  /* Redes sociais + Carrinho */
+  .base-social { display: flex; align-items: center; gap: 20px; }
+  .base-social a, .base-social button {
+    color: white; 
+    font-size: 1.8rem; 
+    background: none; 
+    border: none;
+    cursor: pointer; 
+    transition: all 0.3s ease; 
+    position: relative;
+  }
+  .base-social a:hover, .base-social button:hover {
+    transform: scale(1.2); 
+    text-shadow: 0px 0px 10px #ff5722; 
+    color: #ffcc00;
+  }
+  .base-cart-count {
+    font-size: 0.75rem; 
+    background: red; 
+    color: white;
+    border-radius: 50%; 
+    padding: 2px 6px;
+    position: absolute; 
+    top: -8px; 
+    right: -10px;
+  }
+
+  /* MENU */
+  .base-category-menu {
+    background: #ff5722; 
+    position: sticky; 
+    top: 0; 
+    z-index: 999;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .base-category-menu .nav-link {
+    color: white; 
+    font-weight: 600; 
+    padding: 0.8rem 1.2rem;
+  }
+  .base-category-menu .nav-link:hover { 
+    background: #e64a19; 
+    color:white; 
+  }
+
+  /* FOOTER */
+  footer.base-footer { 
+    background: #222; 
+    color: #ddd; 
+    font-size: 0.9rem; 
+  }
+</style>
+
+  {% block head %}{% endblock %}
+</head>
+<body class="base-body">
+
+<!-- HERO -->
+<section class="base-hero">
+  <img src="{{ site_config.get('banner_url', '/static/banner.jpg') }}" class="banner" alt="Banner Principal">
+
+  <div class="base-hero-overlay">
+    <!-- Logo + Nome -->
+    <div class="base-logo">
+      <img src="{{ site_config.get('logo_url', '/static/logo.png') }}" alt="Logo">
+      <span class="restaurant-name">{{ site_config.get('nome_restaurante', 'Seu Restaurante') }}</span>
+    </div>
+
+    <!-- Redes sociais + Carrinho -->
+    <div class="base-social">
+      <a href="{{ site_config.get('instagram', '#') }}" target="_blank"><i class="bi bi-instagram"></i></a>
+      <a href="{{ site_config.get('facebook', '#') }}" target="_blank"><i class="bi bi-facebook"></i></a>
+      <a href="https://wa.me/{{ site_config.get('whatsapp', '') }}" target="_blank"><i class="bi bi-whatsapp"></i></a>
+      <button id="cart-icon" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart">
+        <i class="bi bi-cart3"></i>
+        <span id="cart-count" class="base-cart-count">0</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+
+<!-- MENU -->
+<nav class="base-category-menu navbar navbar-expand-lg">
+  <div class="container-fluid d-flex justify-content-between align-items-center">
+
+    <!-- Menu centralizado -->
+    <div class="mx-auto">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('cardapio.menu') }}">Cardápio</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('pizza.monte_pizza') }}">Pizza</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Lanches</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Bebidas</a></li>
+
+{% if user and user['role'] == 'admin' %}
+<li class="nav-item">
+  <a class="nav-link text-warning" href="{{ url_for('administracao.update_config_site') }}">
+    <i class="bi bi-gear"></i> Administração
+  </a>
+</li>
+{% endif %}
+
+      </ul>
+    </div>
+
+    <!-- Login / Logout -->
+    <div class="d-flex align-items-center gap-2">
+      {% if not user %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-sm">
+          <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+      {% else %}
+        <span class="text-white me-2">👋 {{ user['nome'] }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-dark btn-sm">
+          <i class="bi bi-box-arrow-right"></i> Sair
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+
+  <!-- MAIN -->
+  <main class="base-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="base-footer text-center py-3 mt-auto">
+    &copy; {{ site_config.get('nome_restaurante', 'Seu Restaurante') }} - {{ current_year }}
+  </footer>
+
+  <!-- OFFCANVAS CARRINHO -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasCart">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title"><i class="bi bi-cart3"></i> Meu Carrinho</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <ul id="cart-items" class="list-group mb-3"></ul>
+      <div class="d-flex justify-content-between">
+        <strong>Total:</strong> <span id="cart-total">R$ 0,00</span>
+      </div>
+      <button class="btn btn-success w-100 mt-3">Finalizar Pedido</button>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIG SITE -->
+  {% if user and user['role'] == 'admin' %}
+  <div class="modal fade" id="modalConfigSite" tabindex="-1">
+    <div class="modal-dialog">
+      <form method="POST" action="{{ url_for('base.update_config') }}" class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title"><i class="bi bi-gear"></i> Configurações do Site</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nome do Restaurante</label>
+            <input type="text" name="nome_restaurante" class="form-control" value="{{ site_config.get('nome_restaurante') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Logo (URL)</label>
+            <input type="text" name="logo_url" class="form-control" value="{{ site_config.get('logo_url') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Banner (URL)</label>
+            <input type="text" name="banner_url" class="form-control" value="{{ site_config.get('banner_url') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Instagram</label>
+            <input type="text" name="instagram" class="form-control" value="{{ site_config.get('instagram', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Facebook</label>
+            <input type="text" name="facebook" class="form-control" value="{{ site_config.get('facebook', '') }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">WhatsApp</label>
+            <input type="text" name="whatsapp" class="form-control" value="{{ site_config.get('whatsapp', '') }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+  <script>
+    let cart = [];
+    const cartCount = document.getElementById('cart-count');
+    const cartItems = document.getElementById('cart-items');
+    const cartTotal = document.getElementById('cart-total');
+
+    function updateCart() {
+      cartItems.innerHTML = '';
+      let total = 0;
+      cart.forEach((item, index) => {
+        total += item.price;
+        cartItems.innerHTML += `
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            ${item.name}
+            <span>
+              R$ ${item.price.toFixed(2)}
+              <button class="btn btn-sm btn-danger ms-2" onclick="removeFromCart(${index})"><i class="bi bi-x"></i></button>
+            </span>
+          </li>`;
+      });
+      cartCount.innerText = cart.length;
+      cartTotal.innerText = 'R$ ' + total.toFixed(2);
+    }
+
+    function addToCart(name, price) {
+      cart.push({name, price});
+      updateCart();
+      new bootstrap.Offcanvas(document.getElementById('offcanvasCart')).show();
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCart();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Lanchonete Delivery{% endblock %}
+
+{% block head %}
+<style>
+  /* Estilos exclusivos do login */
+  .auth-container {
+    min-height: 70vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .auth-card {
+    max-width: 420px;
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .auth-header {
+    background: #ff5722;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+  .auth-body {
+    padding: 1.5rem;
+  }
+  .auth-body .input-group-text {
+    background: #ff5722;
+    color: white;
+    border: none;
+  }
+  .auth-body input:focus {
+    border-color: #ff5722;
+    box-shadow: 0 0 6px rgba(255, 87, 34, 0.6);
+  }
+  .auth-btn {
+    font-weight: bold;
+    transition: 0.3s;
+  }
+  .auth-btn:hover {
+    transform: scale(1.02);
+  }
+
+  /* Cadastro toggle */
+  .auth-register-toggle {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 0.95rem;
+  }
+  .auth-register-toggle a {
+    color: #ff5722;
+    font-weight: bold;
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+  .auth-register-toggle a:hover {
+    color: #e64a19;
+    text-decoration: underline;
+  }
+  .auth-register-form {
+    display: none;
+    margin-top: 1rem;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="card shadow-lg auth-card">
+    <div class="auth-header">
+      <i class="bi bi-box-arrow-in-right"></i> Entrar no sistema
+    </div>
+    <div class="auth-body">
+
+      <!-- FLASH MESSAGES -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- LOGIN -->
+      <form method="POST" action="{{ url_for('auth.login') }}">
+        <div class="mb-3 input-group">
+          <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+          <input type="text" name="username" class="form-control" placeholder="E-mail" required autofocus />
+        </div>
+        <div class="mb-3 input-group">
+          <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+          <input type="password" name="password" class="form-control" placeholder="Senha" required />
+        </div>
+        <button type="submit" class="btn btn-warning w-100 auth-btn">Entrar</button>
+      </form>
+
+      <!-- Toggle Cadastro -->
+      <div class="auth-register-toggle">
+        Ainda não tem conta? <a href="#" id="showRegister">Cadastre-se aqui</a>
+      </div>
+
+      <!-- CADASTRO -->
+      <div class="auth-register-form" id="registerForm">
+        <hr>
+        <h6 class="text-center mb-3">Criar conta</h6>
+        <form method="POST" action="{{ url_for('auth.register') }}">
+          <div class="mb-3 input-group">
+            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+            <input type="text" name="nome" class="form-control" placeholder="Nome completo" required />
+          </div>
+          <div class="mb-3 input-group">
+            <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+            <input type="email" name="email" class="form-control" placeholder="E-mail" required />
+          </div>
+          <div class="mb-3 input-group">
+            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+            <input type="password" name="senha" class="form-control" placeholder="Senha" required />
+          </div>
+          <button type="submit" class="btn btn-success w-100 auth-btn">Cadastrar</button>
+          <p class="text-muted small mt-2 text-center">O cadastro cria sempre uma conta de cliente.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Toggle cadastro
+  document.getElementById("showRegister").addEventListener("click", function(e) {
+    e.preventDefault();
+    const form = document.getElementById("registerForm");
+    form.style.display = (form.style.display === "block") ? "none" : "block";
+  });
+</script>
+{% endblock %}

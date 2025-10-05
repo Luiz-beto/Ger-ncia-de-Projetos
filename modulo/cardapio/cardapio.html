@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Categorias - Lanchonete Delivery{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+.category-section { padding: 2rem 0; }
+.category-section h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #ff5722;
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+  margin-bottom: 2rem;
+}
+
+/* Card */
+.category-card {
+  max-width: 90%;                  /* deixa mais estreito dentro da coluna */
+  margin: 0 auto;                  /* centraliza */
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;       /* contorno cinza suave */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.category-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 20px rgba(255,87,34,0.25);
+}
+
+/* Imagem fixa */
+.category-card img {
+  width: 100%;
+  height: 180px;                   /* altura levemente menor */
+  object-fit: cover;               /* corta sem distorcer */
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.category-title {
+  font-weight: 700;
+  font-size: 1.3rem;
+  margin: 0.5rem 0;
+  color: #333;
+}
+
+/* Descrição em no máximo 2 linhas */
+.category-desc {
+  color: #555;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;           /* limita a 2 linhas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.btn-category {
+  background: linear-gradient(45deg, #ff5722, #e64a19);
+  border: none;
+  color: white;
+  font-weight: 700;
+  padding: 0.6rem 1.2rem;
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.35s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn-category:hover {
+  background: linear-gradient(45deg, #e64a19, #ff7043);
+  box-shadow: 0 4px 12px rgba(255, 87, 34, 0.4);
+}
+
+.admin-actions { position: absolute; top: 10px; right: 10px; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="category-section">
+  <h1 class="text-center">🍔 Categorias</h1>
+
+  <!-- FLASH MESSAGES -->
+  <div class="container mb-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {% if user and user.role == 'admin' %}
+  <div class="text-center mb-4">
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAdd">
+      <i class="bi bi-plus-circle"></i> Adicionar Categoria
+    </button>
+  </div>
+  {% endif %}
+
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for cat in categorias %}
+    <div class="col">
+      <div class="card category-card h-100">
+        {% if cat[3] %}
+          <img src="{{ cat[3] }}" alt="{{ cat[1] }}">
+        {% else %}
+          <div class="text-center p-5">
+            <i class="bi bi-image" style="font-size:3rem;color:#ccc;"></i>
+          </div>
+        {% endif %}
+        <div class="card-body text-center">
+          <h5 class="category-title">{{ cat[1] }}</h5>
+          <p class="category-desc">{{ cat[2] }}</p>
+          <a href="/cardapio/{{ cat[0] }}" class="btn-category">
+            Ver {{ cat[1] }}
+          </a>
+        </div>
+
+        {% if user and user.role == 'admin' %}
+        <div class="admin-actions">
+          <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEdit{{ cat[0] }}">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modalDelete{{ cat[0] }}">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Modal Edit -->
+    <div class="modal fade" id="modalEdit{{ cat[0] }}" tabindex="-1">
+      <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('cardapio.edit_categoria', cat_id=cat[0]) }}" class="modal-content">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Categoria</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label>Nome</label>
+              <input type="text" name="nome" class="form-control" value="{{ cat[1] }}" required>
+            </div>
+            <div class="mb-3">
+              <label>Descrição</label>
+              <textarea name="descricao" class="form-control" required>{{ cat[2] }}</textarea>
+            </div>
+            <div class="mb-3">
+              <label>Imagem (URL)</label>
+              <input type="text" name="imagem_url" class="form-control" value="{{ cat[3] }}">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-warning">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Delete -->
+    <div class="modal fade" id="modalDelete{{ cat[0] }}" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-trash"></i> Excluir Categoria</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            Tem certeza que deseja excluir a categoria <b>{{ cat[1] }}</b>?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <a href="{{ url_for('cardapio.delete_categoria', cat_id=cat[0]) }}" class="btn btn-danger">Excluir</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Modal Add -->
+<div class="modal fade" id="modalAdd" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('cardapio.add_categoria') }}" class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nova Categoria</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label>Nome</label>
+          <input type="text" name="nome" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label>Descrição</label>
+          <textarea name="descricao" class="form-control" required></textarea>
+        </div>
+        <div class="mb-3">
+          <label>Imagem (URL)</label>
+          <input type="text" name="imagem_url" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">Adicionar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
